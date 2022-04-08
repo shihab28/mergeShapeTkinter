@@ -54,7 +54,6 @@ relX, rely = 0, 0
 inX , inY = 0, 0
 
 
-
 def objectRelease(eve=None):
     global relX, rely, inX , inY, delX, delY
     print("Released")
