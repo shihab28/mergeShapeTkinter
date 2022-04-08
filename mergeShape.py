@@ -66,11 +66,15 @@ class MERGE():
     
 
     def mergeShape(self):
+        self.individualArrayList = []
+        i = 0
         for obj in self.objectCordList:
             pts = np.array(obj)
-            cv2.polylines(self.mainCanvas, pts=[pts], isClosed=True, color=(255, 255, 255))
-        
-        # cv2.imshow("MERGED SHAPE", self.mainCanvas)
+            tempShape = cv2.fillPoly(self.mainCanvas, pts=[pts], color=(255, 255, 255))
+            self.individualArrayList.append(tempShape)
+            # print(obj)
+            # cv2.imshow(f"MERGED SHAPE{i}", tempShape)
+            i+=1 
         
 
         # print(self.mainCanvas.shape)
@@ -93,7 +97,7 @@ class MERGE():
                 verticesList.append(tempY+self.yMin)
         
         self.vertices = verticesList
-
+        
         return verticesList
                     
 

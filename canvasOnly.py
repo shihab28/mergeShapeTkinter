@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import ttk
-
+import cv2 as cv2
 from mergeShape import MERGE
 
 root = Tk()
@@ -34,16 +34,6 @@ rect2Points = [501.0, 398.0, 601.0, 300.0, 601.0, 448.0, 501.0, 448.0]
 rect2 = canvasMain.create_polygon(rect2Points, fill="yellow")
 canvasMain.tag_bind(rect2, "<Button1-Motion>", lambda eve = rect2 : objectClickedRectangle(eve=eve, obj=rect2))
 
-pointList = [
-    (0, 100),
-    (100, -20),
-    (120, 60),
-    (40, 60),
-    (40, 20),
-]
-polg1 = canvasMain.create_polygon(pointList, fill="green")
-canvasMain.tag_bind(polg1, "<Button1-Motion>", lambda eve = rect2 : objectClickedRectangle(eve=eve, obj=polg1))
-
 canvasMain.tag_bind(rect1, "<ButtonRelease-1>", lambda eve  : objectRelease(eve=eve))
 canvasMain.tag_bind(rect2, "<ButtonRelease-1>", lambda eve : objectRelease(eve=eve))
 
@@ -52,17 +42,6 @@ canvasMain.bind("<Configure>", lambda eve: canvasMain.configure(scrollregion=can
 
 relX, rely = 0, 0
 inX , inY = 0, 0
-
-
-def objectRelease(eve=None):
-    global relX, rely, inX , inY, delX, delY
-    print("Released")
-    relX, rely = curX, curY
-    inX , inY = 0, 0
-    delX, delY = 0, 0
-
-    print(relX, rely, "\n", inX , inY, "\n", delX, delY)
-
 
 
 
@@ -83,18 +62,28 @@ def findBoundingBox(pointList):
 
 def makeUnion(pointList = [], objList = []):
 
-        mergePoints = [canvasMain.coords(rect1)+canvasMain.coords(rect2)]
+        mergePoints = []
+        mergePoints.append(canvasMain.coords(rect1))
+        mergePoints.append(canvasMain.coords(rect2))
 
+        # print(mergePoints)
         mergedShape = MERGE(mergePoints)
         newPoints = mergedShape.vertices
-        cv2.imshow("MERGED", mergedShape.mainCanvas)
+        # cv2.imshow("MERGED", mergedShape.mainCanvas)
         print(newPoints)
     
         polgNew = canvasMain.create_polygon(newPoints, fill="Purple")
-
-        cv2.waitKey(0)
+        root.update()
+        # cv2.waitKey(0)
     
+def objectRelease(eve=None):
+    global relX, rely, inX , inY, delX, delY
+    print("Released")
+    relX, rely = 0, 0
+    inX , inY = 0, 0
+    delX, delY = 0, 0
 
+    # print(relX, rely, "\n", inX , inY, "\n", delX, delY)
 
 def objectClickedRectangle(eve, obj):
     global curX, curY, relX, rely, inX , inY, delX, delY
@@ -119,10 +108,9 @@ def objectClickedRectangle(eve, obj):
 
         # x0, y0, x1, y1 =   x0 + delX, y0 + delY, x1 + delX, y1 + delY
         canvasMain.coords(obj, newCord)
-        print(newCord)
+        # print(newCord)
     except:
         print(canvasMain.coords(obj))
-
 
     inX , inY =  curX, curY
 
@@ -135,6 +123,6 @@ def objectClickedRectangle(eve, obj):
 
 
 root.bind("<Key-p>", lambda eve : findBoundingBox(pointList))
-root.bind("<Key-n>", lambda eve : makeUnion([], []))
+root.bind("<Key-m>", lambda eve : makeUnion([], []))
 
 root.mainloop()
