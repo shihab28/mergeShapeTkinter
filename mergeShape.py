@@ -9,6 +9,9 @@ class MERGE():
         self.objectList = objectList
         self.xpos, self.ypos = xpos, ypos 
 
+        self.padx = 1
+        self.pady = 1
+
         self.getBoundary()
         self.makeCanvas()
         self.mergeShape()
@@ -59,13 +62,13 @@ class MERGE():
 
     
     def makeCanvas(self):
-        self.mainCanvas = np.zeros((self.canvasHeight, self.canvasWidth)).astype('uint8')
+        self.mainCanvas = np.zeros((self.canvasHeight+self.padx, self.canvasWidth+self.pady)).astype('uint8')
     
 
     def mergeShape(self):
         for obj in self.objectCordList:
             pts = np.array(obj)
-            cv2.fillPoly(self.mainCanvas, pts=[pts], color=(255, 255, 255))
+            cv2.polylines(self.mainCanvas, pts=[pts], isClosed=True, color=(255, 255, 255))
         
         # cv2.imshow("MERGED SHAPE", self.mainCanvas)
         
@@ -105,6 +108,7 @@ if __name__ == "__main__":
         [226.0, 176.0, 526.0, 176.0, 526.0, 426.0, 226.0, 426.0],
         [501.0, 398.0, 601.0, 300.0, 601.0, 448.0, 501.0, 448.0]
     ]
+
     mergeShape = MERGE(objectList)
     vertices = mergeShape.vertices
     cv2.imshow("MERGED", mergeShape.mainCanvas)

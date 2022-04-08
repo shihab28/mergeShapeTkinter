@@ -87,8 +87,12 @@ def makeUnion(pointList = [], objList = []):
 
         mergedShape = MERGE(mergePoints)
         newPoints = mergedShape.vertices
-        print(mergePoints, newPoints)
+        cv2.imshow("MERGED", mergedShape.mainCanvas)
+        print(newPoints)
+    
         polgNew = canvasMain.create_polygon(newPoints, fill="Purple")
+
+        cv2.waitKey(0)
     
 
 
