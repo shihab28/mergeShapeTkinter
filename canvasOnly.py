@@ -60,12 +60,14 @@ def findBoundingBox(pointList):
     print(xmin, ymin, xmax, ymax)
 
 
-def makeUnion(pointList = [], objList = []):
+
+
+def makeUnion(pointList = [], objList = [rect1, rect2]):
 
         mergePoints = []
-        mergePoints.append(canvasMain.coords(rect1))
-        mergePoints.append(canvasMain.coords(rect2))
-
+        for obj in objList:
+            mergePoints.append(canvasMain.coords(obj))
+        
         # print(mergePoints)
         mergedShape = MERGE(mergePoints)
         newPoints = mergedShape.vertices
@@ -123,6 +125,6 @@ def objectClickedRectangle(eve, obj):
 
 
 root.bind("<Key-p>", lambda eve : findBoundingBox(pointList))
-root.bind("<Key-m>", lambda eve : makeUnion([], []))
+root.bind("<Key-m>", lambda eve : makeUnion())
 
 root.mainloop()
