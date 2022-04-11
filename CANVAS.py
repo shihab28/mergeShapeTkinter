@@ -6,7 +6,7 @@ from venv import create
 from PIL import Image, ImageTk
 import random
 
-from matplotlib.pyplot import draw
+from mergeShape import MERGE
 
 
 
@@ -30,6 +30,17 @@ def loadImage(imageSize = (24, 24)):
 
     return imageDict
 
+
+
+
+
+
+
+
+
+# def objectClickedRectangle(eve=None,  obj=None):
+#     global toolbarMain, canvasMain, labelInfo
+#     print(canvasMain.canvas, eve,  obj)
 
 
 class AUTOSCROLL(ttk.Scrollbar):
@@ -89,8 +100,12 @@ class CANVAS(Canvas):
 
         self.selectedObject = 'canvas'
 
-        self.objectList = []
+        self.selectedObjectList = []
 
+        self.lineWidth = 1
+        self.resolution = 5
+
+        self.objectRelease()
         self.initCanvas()
 
     
@@ -157,20 +172,13 @@ class CANVAS(Canvas):
                 
                 if self.penType == CANVAS.penTypeList[2]:
                     self.currentClickCord = x, y
-                    # print((self.prevClickCord, self.currentClickCord))
                     newObj = self.drawLine((self.prevClickCord + self.currentClickCord))
-                    self.objectList.append(newObj)
-                    
-                    # newObj.bind("<Button-1>", lambda eve = self : print(newObj))
                     self.penStatus = CANVAS.penTypeList[0]
                     self.prevClickCord = self.currentClickCord
 
                 elif self.penType == CANVAS.penTypeList[3]:
                     self.currentClickCord = x, y
-                    # print((self.prevClickCord, self.currentClickCord))
                     newObj = self.drawRectangle((self.prevClickCord + self.currentClickCord), fill="Blue")
-                    self.objectList.append(newObj)
-                    # newObj.bind("<Button-1>", lambda eve = self : print(newObj))
                     self.penStatus = CANVAS.penTypeList[0]
                     self.prevClickCord = self.currentClickCord
                 
@@ -179,8 +187,6 @@ class CANVAS(Canvas):
                     # print((self.prevClickCord, self.currentClickCord))
                     
                     newObj = self.drawPolygon((self.prevClickCord + self.currentClickCord), fill="Yellow")
-                    self.objectList.append(newObj)
-                    # newObj.bind("<Button-1>", lambda eve = self : print(newObj))
                     self.penStatus = CANVAS.penTypeList[0]
                     self.prevClickCord = self.currentClickCord
 
@@ -191,10 +197,7 @@ class CANVAS(Canvas):
                     (x1, y1) = self.currentClickCord
 
                     r = int((abs(x1 - x0)**2 + abs(y1 - y0)**2)**.5)
-                    # print(r)
-
                     newObj = self.drawOval((x0 - r, y0 - r, x0 + r, y0 + r), fill="Green")
-                    self.objectList.append(newObj)
                     # newObj.bind("<Button-1>", lambda eve = self : print(newObj))
                     self.penStatus = CANVAS.penTypeList[0]
                     self.prevClickCord = self.currentClickCord
@@ -202,18 +205,12 @@ class CANVAS(Canvas):
                 elif self.penType == CANVAS.penTypeList[6]:
                     self.currentClickCord = x, y
                     newObj = self.drawText((self.prevClickCord + self.currentClickCord), fill="Blue")
-                    self.objectList.append(newObj)
-                    # newObj.bind("<Button-1>", lambda eve = self : print(newObj))
                     self.penStatus = CANVAS.penTypeList[0]
                     self.prevClickCord = self.currentClickCord
 
                     self.selectedObject = 'canvas'
 
                 self.prevClickCord = None, None
-
-                # newObj.bind("<Button-1>", lambda eve = self : print(newObj))
-
-                
 
             else:
                 if self.penType != CANVAS.penTypeList[0] and self.penType == CANVAS.penTypeList[1]:
@@ -229,14 +226,6 @@ class CANVAS(Canvas):
                     
                     self.prevClickCord = None, None
 
-        
-                
-                
-                
-                
-
-
-
     def toolButtonCLicked(self, i):
         self.deHighLightButton()
         if self.toolButtonCommandStatus[i] == False:
@@ -249,13 +238,150 @@ class CANVAS(Canvas):
             self.toolButtonCommandStatus[i] = False
 
 
-
-
     def deHighLightButton(self):
+
         for butt in self.toolButtonList:
             butt['bg'] = self.toolBg
             butt['fg'] = self.toolFg
+
+        allObjectList = self.canvas.find_all()
+        print(allObjectList)
+
+        for obj in allObjectList:
+            try:
+                self.canvas.itemconfigure(obj, bd=0)
+            except:
+                pass
+
+
         self.clearSelection()
+        self.penStatus = 'select'
+        self.prevClickCord = None, None
+
+
+
+    def initCanvas(self):
+        
+        self.canvas = Canvas(self.frame, bg=self.canvasBg, highlightbackground=self.canvasBg, highlightcolor=self.canvasBg, border=0, borderwidth=0, highlightthickness=0)
+        
+        self.scrollCanvasY = Scrollbar(self.frame, orient=VERTICAL)
+        self.scrollCanvasY.pack(expand=False, fill="y", side=RIGHT)
+        self.scrollCanvasY.config(command=self.canvas.yview)
+
+        self.scrollCanvasX = Scrollbar(self.frame, orient=HORIZONTAL)
+        self.scrollCanvasX.pack(expand=False, fill="x", side=BOTTOM)
+        self.scrollCanvasX.config(command=self.canvas.xview)
+
+        self.canvas.pack(expand=True, fill="both", anchor=CENTER)
+        self.canvas.config(xscrollcommand=self.scrollCanvasX.set, yscrollcommand=self.scrollCanvasY.set) 
+
+        self.canvas.bind("<Button-1>", lambda eve = self : self.createShape(eve=eve))
+        self.canvas.bind("<Configure>", lambda eve : self.canvas.configure(scrollregion= self.canvas.bbox("all")))
+
+        self.updateCenter()
+        self.updateAxis()
+        # self.updateGrid()
+
+        # self.canvas.bind("<Motion>", lambda eve = self : self.updateCenter())
+
+    def updateCenter(self):   
+        self.canvWidth = self.canvas.winfo_width()
+        self.canvHeight = self.canvas.winfo_height()
+        self.centerCord = (self.canvWidth//2, self.canvHeight//2)
+        (self.centerX, self.centerY) =  self.centerCord
+        # self.updateAxis()
+
+
+    def updateAxis(self):
+        try:
+            self.canvas.delete(self.xAxis)
+            self.canvas.delete(self.yAxis)
+        except:
+            pass
+
+        self.xAxis = self.drawLine((self.limitNeg, self.centerY, self.limitPos, self.centerY))
+        self.yAxis = self.drawLine((self.centerX, self.limitNeg, self.centerX, self.limitPos))
+
+    def makeUnion(self):
+        mergePoints = []
+        if self.selectedObjectList != []:
+            for obj in self.selectedObjectList:
+                mergePoints.append(self.canvas.coords(obj))
+           
+            mergedShape = MERGE(mergePoints)
+            newPoints = mergedShape.vertices
+            print(newPoints)
+
+            for obj in self.selectedObjectList:
+                self.canvas.delete(obj) 
+
+            newObj = self.drawPolygon(newPoints, fill="Purple")
+            self.selectedObjectList = []
+            root.update()
+
+
+    def objectRelease(self, eve=None):
+        print("Released")
+        self.relX, self.rely = 0, 0
+        self.inX , self.inY = 0, 0
+        self.delX, self.delY = 0, 0  
+        
+                
+                
+    def objectClickedRectangle(self, eve=None,  obj=None, delx=None, dely=None):
+      
+        if obj != None:
+
+            if delx == None or dely == None and eve != None:
+                self.curX,  self.curY = eve.x, eve.y
+                if  self.inX == 0 and  self.inY == 0:
+                    self.delX,  self.delY = 0, 0
+                
+                else:
+                    self.delX, self.delY = self.curX - self.inX, self.curY - self.inY
+                    delx, dely= self.delX,  self.delY
+
+            elif delx != None and dely != None:
+
+                try :
+                    newCord = []
+                    for i, cord in enumerate(self.canvas.coords(obj)):
+                        if i % 2 == 0:
+                            newCord.append(cord+delx)
+                        if i % 2 == 1:
+                            newCord.append(cord+dely)
+
+                    self.canvas.coords(obj, newCord)
+                    # print(newCord)
+                except:
+                    self.canvas.coords(obj, self.canvas.coords(obj))
+
+                self.inX , self.inY =  delx, dely
+
+    def controlClicked(self, eve=None,  obj=None):
+        self.objectRelease()
+        self.deHighLightButton()
+        
+        if obj not in self.selectedObjectList:
+            self.selectedObjectList.append(obj)
+        
+        
+        print("self.controlClicked", self.selectedObjectList)
+        
+    def objectClicked(self, eve=None,  obj=None):
+        self.objectRelease()
+        self.deHighLightButton()
+        self.selectedObjectList = []
+        self.controlClicked(eve, obj)
+        # print("self.objectClicked", self.selectedObjectList)
+
+    def deleteObject(self):
+        for obj in self.selectedObjectList:
+            try:
+                self.canvas.delete(obj)
+            except:
+                pass
+
 
     def clearSelection(self):
         print("clearSelection")
@@ -292,117 +418,108 @@ class CANVAS(Canvas):
         self.penType = 'text'
         pass
 
+    def makeAngularPooints(self, cord):
+        r = (self.lineWidth / 2) / (2 ** .5)
+        (x0, y0, x1, y1) = cord
 
-    def initCanvas(self):
+        if ( int(x0 -x1) * int(y0 - y1)) >= 0:
+            pointList = [x0-r, y0+r, x0+r, y0-r, x1+r, y1-r, x1-r, y1+r]
         
-        self.canvas = Canvas(self.frame, bg=self.canvasBg, highlightbackground=self.canvasBg, highlightcolor=self.canvasBg, border=0, borderwidth=0, highlightthickness=0)
-        
-        self.scrollCanvasY = Scrollbar(self.frame, orient=VERTICAL)
-        self.scrollCanvasY.pack(expand=False, fill="y", side=RIGHT)
-        self.scrollCanvasY.config(command=self.canvas.yview)
-
-        self.scrollCanvasX = Scrollbar(self.frame, orient=HORIZONTAL)
-        self.scrollCanvasX.pack(expand=False, fill="x", side=BOTTOM)
-        self.scrollCanvasX.config(command=self.canvas.xview)
-
-        self.canvas.pack(expand=True, fill="both", anchor=CENTER)
-        self.canvas.config(xscrollcommand=self.scrollCanvasX.set, yscrollcommand=self.scrollCanvasY.set) 
-
-        self.canvas.bind("<Button-1>", lambda eve = self : self.createShape(eve=eve))
-        self.canvas.bind("<Configure>", lambda eve : self.canvas.configure(scrollregion= self.canvas.bbox("all")))
-
-        self.updateCenter()
-        self.updateAxis()
-        self.updateGrid()
-
-        # self.canvas.bind("<Motion>", lambda eve = self : self.updateCenter())
-    
+        else:
+            pointList =  [x0-r, y0-r, x0+r, y0+r, x1+r, y1+r, x1-r, y1-r]
 
 
-    def updateCenter(self):   
-        self.canvWidth = self.canvas.winfo_width()
-        self.canvHeight = self.canvas.winfo_height()
-        self.centerCord = (self.canvWidth//2, self.canvHeight//2)
-        (self.centerX, self.centerY) =  self.centerCord
-        # self.updateAxis()
+        return pointList
 
+    def moveObject(self, key=None):
 
-    def updateGrid(self):
-        pass
-        # for xCord in range(self.limitNeg, self.limitPos, self.gridResolution):
-        #     for yCord in range(self.limitNeg, self.limitPos, self.gridResolution):
-        #         self.drawDot((xCord, yCord))
-
-
-
-    def updateAxis(self):
-        try:
-            self.canvas.delete(self.xAxis)
-            self.canvas.delete(self.yAxis)
-        except:
-            pass
-
-        
-        self.xAxis = self.drawLine((self.limitNeg, self.centerY, self.limitPos, self.centerY))
-        self.yAxis = self.drawLine((self.centerX, self.limitNeg, self.centerX, self.limitPos))
-
-
-
-    def updateView(self):
-        pass
-
-    
-    def objectClicked(self):
-        print(self)
+        if self.selectedObjectList != []:
+            if len(self.selectedObjectList) == 1:
+                if key == 'Up':
+                    self.objectClickedRectangle(eve=None, obj= self.selectedObjectList[0], delx=0, dely= -self.resolution)
+                elif key == 'Down':
+                    self.objectClickedRectangle(eve=None, obj= self.selectedObjectList[0], delx=0, dely= self.resolution)
+                elif key == 'Left':
+                    self.objectClickedRectangle(eve=None, obj= self.selectedObjectList[0], delx=-self.resolution, dely= 0)
+                elif key == 'Right':
+                    self.objectClickedRectangle(eve=None, obj= self.selectedObjectList[0], delx= self.resolution, dely=0)
 
 
     def drawDot(self, cord, *args, **kwargs):
         (x0, y0) = cord
         obj = self.canvas.create_oval(x0, y0, x0, y0, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>", lambda eve = self : self.objectClicked())
+        self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve = obj : self.objectClickedRectangle(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<ButtonRelease-1>", lambda eve  : self.objectRelease(eve=eve))
         return obj
     
     def drawLine(self, cord, *args, **kwargs):
-        (x0, y0, x1, y1) = cord
-        obj =  self.canvas.create_line(x0, y0, x1, y1, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>",  lambda eve = self : self.objectClicked())
+        
+        if self.lineWidth > 1:
+            recCord = self.makeAngularPooints(cord)
+            obj = self.canvas.create_polygon(recCord, *args, **kwargs)
+        
+        else:
+            obj = self.canvas.create_line(cord, *args, **kwargs)
+
+        self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve = obj : self.objectClickedRectangle(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Button-1>", lambda  eve = obj : self.objectClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Control-1>", lambda  eve = obj : self.controlClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<ButtonRelease-1>", lambda eve  : self.objectRelease(eve=eve))
+        
+
         return obj
 
     def drawRectangle(self, cord, *args, **kwargs):
         (x0, y0, x1, y1) = cord
-        obj = self.canvas.create_rectangle(x0, y0, x1, y1, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>",  lambda eve = self : self.objectClicked())
+        recCord = [x0, y0, x1, y0, x1, y1, x0, y1]
+
+        obj = self.canvas.create_polygon(recCord, *args, **kwargs)
+        self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve = obj : self.objectClickedRectangle(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Button-1>", lambda  eve = obj : self.objectClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Control-1>", lambda  eve = obj : self.controlClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<ButtonRelease-1>", lambda eve  : self.objectRelease(eve=eve))
         
         return obj
 
     def drawOval(self, cord, *args, **kwargs):
         (x0, y0, x1, y1) = cord
         obj =  self.canvas.create_oval(x0, y0, x1, y1, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>", lambda eve = self : self.objectClicked())
+        self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve = obj : self.objectClickedRectangle(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Button-1>", lambda  eve = obj : self.objectClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Control-1>", lambda  eve = obj : self.controlClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<ButtonRelease-1>", lambda eve  : self.objectRelease(eve=eve))
+        
         return obj
 
     def drawPolygon(self, cord, *args, **kwargs):
-        (x0, y0, x1, y1) = cord
-        obj = self.canvas.create_polygon(x0, y0, x1, y1, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>", lambda eve = self : self.objectClicked())
+        obj = self.canvas.create_polygon(cord, *args, **kwargs)
+        self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve = obj : self.objectClickedRectangle(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Button-1>", lambda  eve = obj : self.objectClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Control-1>", lambda  eve = obj : self.controlClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<ButtonRelease-1>", lambda eve  : self.objectRelease(eve=eve))
+        
+
         return obj
 
     def drawText(self, cord, *args, **kwargs):
         (x0, y0) = cord
         obj =  self.canvas.create_text(x0, y0, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>", lambda eve = self : self.objectClicked())
+        self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve = obj : self.objectClickedRectangle(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Button-1>", lambda  eve = obj : self.objectClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<Control-1>", lambda  eve = obj : self.controlClicked(eve=eve, obj=obj))
+        self.canvas.tag_bind(obj, "<ButtonRelease-1>", lambda eve  : self.objectRelease(eve=eve))
         return obj
 
     def drawArc(self, cord, *args, **kwargs):
         (x0, y0, x1, y1) = cord
         obj =  self.canvas.create_arc(x0, y0, x1, y1, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>", lambda eve = self : self.objectClicked())
+        # self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve : self.objectClickedRectangle(eve=eve))
         return obj
     
     def drawImage(self, cord, *args, **kwargs):
         (x0, y0) = cord
         obj =  self.canvas.create_image(x0, y0, *args, **kwargs)
-        self.canvas.tag_bind(obj, "<Button-1>", lambda eve = self : self.objectClicked())
+        # self.canvas.tag_bind(obj, "<Button1-Motion>", lambda  eve : self.objectClickedRectangle(eve=eve))
         return obj
 
     
@@ -417,24 +534,15 @@ class CANVAS(Canvas):
         self.createToolButton()
 
 
-    
-    
 
-
-
-class TOOLBAR(CANVAS):
-
-
-    
+class TOOLBAR(CANVAS):   
     def __init__(self, frame, bg="#D5F3FE", height=40):
         self.toolBg = bg
         self.canvasHeight = height
 
     
         self.frame = Frame(frame, bg=self.toolBg)
-        self.frame.pack(expand=False)
-
-            
+        self.frame.pack(expand=False)          
             
 
 def updateWindowSize(eve=None):
@@ -449,6 +557,32 @@ def updateWindowSize(eve=None):
 def clearSelection(eve=None):
     global toolbarMain, canvasMain, labelInfo
     canvasMain.clearSelection()
+    canvasMain.selectedObjectList = []
+    canvasMain.deHighLightButton()
+
+def mergeShapes(eve=None):
+    global toolbarMain, canvasMain, labelInfo
+    print("merging")
+    canvasMain.makeUnion()
+
+
+def deleteShapes(eve=None):
+    global toolbarMain, canvasMain, labelInfo
+    canvasMain.deleteObject()
+    clearSelection()
+    
+
+def keyPressed(eve=None):
+    global canvasMain
+    key = eve.keysym
+
+    if key == 'Up' or key == 'Down' or key == 'Left' or key == 'Right':
+        canvasMain.moveObject(key)
+
+
+
+
+
 
 
 if __name__ == "__main__":
@@ -469,11 +603,15 @@ if __name__ == "__main__":
     root.bind("<Motion>", updateWindowSize)
     root.bind("<Configure>", updateWindowSize)
     root.bind("<Escape>", clearSelection)
+    root.bind("<Control-Key-m>", mergeShapes)
+    root.bind("<Delete>", deleteShapes)
+    root.bind('<Key>', keyPressed)
 
     infoFrame = Frame(frame_main)
     infoFrame.pack(expand=False, fill="x")
     labelInfo = Label(infoFrame)
     labelInfo.pack(expand=False, fill="x")
+
 
 
     root.mainloop()

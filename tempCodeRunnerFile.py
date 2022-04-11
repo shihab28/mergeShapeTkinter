@@ -1,2 +1,1 @@
- # print(obj)
-            # cv2.imshow(f"MERGED SHAPE{i}", tempShape)
+if key == 'Up' or key == 'Down' or key == 'Left' or key == 'Right':

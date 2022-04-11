@@ -18,9 +18,6 @@ class MERGE():
         self.findVertices()
 
 
-
-
-
     def getBoundary(self):
 
         self.xList = []
@@ -58,8 +55,6 @@ class MERGE():
 
             self.objectCordList.append(pointCordList)
 
-        # print(self.boundaries, "\n", self.objectCordList)
-
     
     def makeCanvas(self):
         self.mainCanvas = np.zeros((self.canvasHeight+self.padx, self.canvasWidth+self.pady)).astype('uint8')
@@ -72,22 +67,12 @@ class MERGE():
             pts = np.array(obj)
             tempShape = cv2.fillPoly(self.mainCanvas, pts=[pts], color=(255, 255, 255))
             self.individualArrayList.append(tempShape)
-            # print(obj)
-            # cv2.imshow(f"MERGED SHAPE{i}", tempShape)
             i+=1 
-        
 
-        # print(self.mainCanvas.shape)
-        # self.mergedImage = cv2.cvtColor(self.mainCanvas, cv2.COLOR_BGR2GRAY)
-        # print(self.mainCanvas)
-        
 
     def findVertices(self):
-        # _,threshold = cv2.threshold(self.mainCanvas, 110, 255, cv2.THRESH_BINARY)
         
         contours,_=cv2.findContours(self.mainCanvas, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        # print(contours)
-        
 
         verticesList = []
         for lev1 in contours:
@@ -105,7 +90,16 @@ class MERGE():
 
 
 
-    
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     objectList = [
