@@ -101,6 +101,7 @@ class CANVAS(Canvas):
         self.selectedObject = 'canvas'
 
         self.selectedObjectList = []
+        self.clickedCordinate = []
 
         self.lineWidth = 1
         self.resolution = 5
@@ -166,65 +167,38 @@ class CANVAS(Canvas):
     def createShape(self, eve=None):
         if eve != None:
             x, y = eve.x, eve.y
-            # print(x, y)
+            print(x, y)
 
-            if self.penStatus == 'clicked' and self.prevClickCord != (None, None):
-                
-                if self.penType == CANVAS.penTypeList[2]:
-                    self.currentClickCord = x, y
-                    newObj = self.drawLine((self.prevClickCord + self.currentClickCord))
-                    self.penStatus = CANVAS.penTypeList[0]
-                    self.prevClickCord = self.currentClickCord
+            # self.clickedCordinate = []
 
-                elif self.penType == CANVAS.penTypeList[3]:
-                    self.currentClickCord = x, y
-                    newObj = self.drawRectangle((self.prevClickCord + self.currentClickCord), fill="Blue")
-                    self.penStatus = CANVAS.penTypeList[0]
-                    self.prevClickCord = self.currentClickCord
-                
-                elif self.penType == CANVAS.penTypeList[4]:
-                    self.currentClickCord = x, y
-                    # print((self.prevClickCord, self.currentClickCord))
-                    
-                    newObj = self.drawPolygon((self.prevClickCord + self.currentClickCord), fill="Yellow")
-                    self.penStatus = CANVAS.penTypeList[0]
-                    self.prevClickCord = self.currentClickCord
+            if self.clickedCordinate != []:
+                lenCord = len(self.clickedCordinate)
+                if self.penType == 'line' and lenCord == 2:  
+                    newObj = self.drawLine(self.clickedCordinate)
+                    self.clickedCordinate = []
 
-                elif self.penType == CANVAS.penTypeList[5]:
-                    self.currentClickCord = x, y
+                elif self.penType == 'rectangle' and lenCord == 2:  
+                    newObj = self.drawRectangle(self.clickedCordinate)
+                    self.clickedCordinate = []
 
-                    (x0, y0) = self.prevClickCord
-                    (x1, y1) = self.currentClickCord
+                elif self.penType == 'polygon' and lenCord > 2:  
+                    newObj = self.drawLine(self.clickedCordinate)
+                    self.clickedCordinate = []
 
-                    r = int((abs(x1 - x0)**2 + abs(y1 - y0)**2)**.5)
-                    newObj = self.drawOval((x0 - r, y0 - r, x0 + r, y0 + r), fill="Green")
-                    # newObj.bind("<Button-1>", lambda eve = self : print(newObj))
-                    self.penStatus = CANVAS.penTypeList[0]
-                    self.prevClickCord = self.currentClickCord
+                elif self.penType == 'oval' and lenCord == 2:  
+                    newObj = self.drawLine(self.clickedCordinate)
+                    self.clickedCordinate = []
 
-                elif self.penType == CANVAS.penTypeList[6]:
-                    self.currentClickCord = x, y
-                    newObj = self.drawText((self.prevClickCord + self.currentClickCord), fill="Blue")
-                    self.penStatus = CANVAS.penTypeList[0]
-                    self.prevClickCord = self.currentClickCord
+                elif self.penType == 'text':  
+                    newObj = self.drawLine(self.clickedCordinate)
+                    self.clickedCordinate = []
 
-                    self.selectedObject = 'canvas'
-
-                self.prevClickCord = None, None
-
+                elif self.penType == 'eraser':  
+                    newObj = self.drawLine(self.clickedCordinate)
+                    self.clickedCordinate = []
             else:
-                if self.penType != CANVAS.penTypeList[0] and self.penType == CANVAS.penTypeList[1]:
-                    self.drawDot((x, y))
-                    self.penStatus = 'select'
-                    self.prevClickCord = x, y 
+                self.clickedCordinate.append(x, y)
 
-                elif self.penType != CANVAS.penTypeList[0]:
-                    self.penStatus = 'clicked'
-                    self.prevClickCord = x, y 
-                
-                else:
-                    
-                    self.prevClickCord = None, None
 
     def toolButtonCLicked(self, i):
         self.deHighLightButton()
@@ -319,44 +293,60 @@ class CANVAS(Canvas):
             self.selectedObjectList = []
             root.update()
 
+        self.clickedCordinate = []
+
 
     def objectRelease(self, eve=None):
         print("Released")
         self.relX, self.rely = 0, 0
         self.inX , self.inY = 0, 0
         self.delX, self.delY = 0, 0  
+
+        
         
                 
                 
     def objectClickedRectangle(self, eve=None,  obj=None, delx=None, dely=None):
-      
+        
+        
         if obj != None:
-
-            if delx == None or dely == None and eve != None:
+            
+            if eve != None:
+                
                 self.curX,  self.curY = eve.x, eve.y
+                delx, dely = 0, 0
+                
                 if  self.inX == 0 and  self.inY == 0:
                     self.delX,  self.delY = 0, 0
-                
+                    
                 else:
                     self.delX, self.delY = self.curX - self.inX, self.curY - self.inY
                     delx, dely= self.delX,  self.delY
+                    # print(self.inX , self.inY, delx, dely)
+                    
+                    
 
-            elif delx != None and dely != None:
+            # elif delx != None and dely != None:
 
-                try :
-                    newCord = []
-                    for i, cord in enumerate(self.canvas.coords(obj)):
-                        if i % 2 == 0:
-                            newCord.append(cord+delx)
-                        if i % 2 == 1:
-                            newCord.append(cord+dely)
+            try :
+                newCord = []
+                cordList = self.canvas.coords(obj)
+                
+                for i, cord in enumerate(cordList):
+                    if i % 2 == 0:
+                        newCord.append(cord+delx)
+                    if i % 2 == 1:
+                        newCord.append(cord+dely)
 
-                    self.canvas.coords(obj, newCord)
-                    # print(newCord)
-                except:
-                    self.canvas.coords(obj, self.canvas.coords(obj))
+                self.canvas.coords(obj, newCord)
+                self.inX , self.inY =  self.curX,  self.curY
+                # print(newCord)
+            except:
+                self.canvas.coords(obj, self.canvas.coords(obj))
+        
+        self.clickedCordinate = []
 
-                self.inX , self.inY =  delx, dely
+            
 
     def controlClicked(self, eve=None,  obj=None):
         self.objectRelease()
@@ -367,6 +357,8 @@ class CANVAS(Canvas):
         
         
         print("self.controlClicked", self.selectedObjectList)
+
+        self.clickedCordinate = []
         
     def objectClicked(self, eve=None,  obj=None):
         self.objectRelease()
@@ -375,12 +367,16 @@ class CANVAS(Canvas):
         self.controlClicked(eve, obj)
         # print("self.objectClicked", self.selectedObjectList)
 
+        self.clickedCordinate = []
+
     def deleteObject(self):
         for obj in self.selectedObjectList:
             try:
                 self.canvas.delete(obj)
             except:
                 pass
+
+        self.clickedCordinate = []
 
 
     def clearSelection(self):

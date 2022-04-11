@@ -1,1 +1,1 @@
-if key == 'Up' or key == 'Down' or key == 'Left' or key == 'Right':
+createShape
